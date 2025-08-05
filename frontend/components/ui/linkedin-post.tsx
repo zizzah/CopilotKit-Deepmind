@@ -213,3 +213,154 @@ export function LinkedInPostPreview({title, content}: {title: string, content: s
     </div>
   )
 }
+
+// Compact LinkedIn Post Component (for chat UI)
+export function LinkedInPostCompact({
+  title,
+  content,
+  className,
+}: LinkedInPostProps) {
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + "M"
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(1) + "K"
+    }
+    return num.toString()
+  }
+
+  // Default values for demo purposes
+  const defaultAuthor = {
+    name: "DeepMind Research",
+    title: "AI Research Scientist",
+    company: "Google DeepMind",
+    avatar: "/placeholder-user.jpg",
+    verified: true,
+  }
+  
+  const defaultTimestamp = "2h"
+  const defaultLocation = "London, UK"
+  const defaultLikes = 1247
+  const defaultComments = 89
+  const defaultShares = 23
+  const defaultViews = 45600
+
+  return (
+    <Card className={cn("w-full max-w-sm bg-white border border-gray-200/50 shadow-sm", className)} style={{ transform: 'scale(0.9)', transformOrigin: 'top left' }}>
+      <CardContent className="p-3">
+        {/* Compact Indicator */}
+        {/* <div className="text-xs text-blue-500 mb-1 font-medium">[Compact Version]</div> */}
+        {/* Header */}
+        <div className="flex items-start gap-2 mb-2">
+          <Avatar className="w-8 h-8">
+            <AvatarImage src={defaultAuthor.avatar} alt={defaultAuthor.name} />
+            <AvatarFallback className="bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-semibold">
+              {defaultAuthor.name.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1 mb-1">
+              <span className="font-semibold text-gray-900 text-xs truncate">
+                {defaultAuthor.name}
+              </span>
+              {defaultAuthor.verified && (
+                <div className="w-3 h-3 bg-blue-600 rounded-full flex items-center justify-center">
+                  <svg className="w-1.5 h-1.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
+            
+            <div className="text-gray-600 text-xs mb-1">
+              <div>{defaultAuthor.title}</div>
+              <div>{defaultAuthor.company}</div>
+            </div>
+            
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div className="flex items-center gap-1">
+                <Calendar className="w-2 h-2" />
+                <span>{defaultTimestamp}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <MapPin className="w-2 h-2" />
+                <span>{defaultLocation}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="mb-2">
+          <h3 className="font-semibold text-gray-900 text-sm">
+            {title}
+          </h3>
+        </div>
+
+        {/* Content */}
+        <div className="mb-2">
+          <p className="text-gray-900 text-xs leading-relaxed whitespace-pre-wrap overflow-hidden" style={{
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical'
+          }}>
+            {content}
+          </p>
+        </div>
+
+        {/* Engagement Stats */}
+        <div className="flex items-center justify-between py-1 border-t border-gray-100 text-xs text-gray-500">
+          <div className="flex items-center gap-1">
+            <div className="flex -space-x-1">
+              <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+                <ThumbsUp className="w-2 h-2 text-white" />
+              </div>
+              <div className="w-4 h-4 bg-green-600 rounded-full flex items-center justify-center">
+                <Heart className="w-2 h-2 text-white" />
+              </div>
+              <div className="w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">+</span>
+              </div>
+            </div>
+            <span>{formatNumber(defaultLikes)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span>{formatNumber(defaultComments)} comments</span>
+            <span>{formatNumber(defaultShares)} shares</span>
+          </div>
+        </div>
+
+        {/* Action Bar */}
+        <div className="flex items-center justify-between pt-1 border-t border-gray-100">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex items-center gap-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 h-6 px-2"
+          >
+            <ThumbsUp className="w-2 h-2" />
+            <span className="text-xs">Like</span>
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex items-center gap-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 h-6 px-2"
+          >
+            <MessageCircle className="w-2 h-2" />
+            <span className="text-xs">Comment</span>
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex items-center gap-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 h-6 px-2"
+          >
+            <Repeat2 className="w-2 h-2" />
+            <span className="text-xs">Repost</span>
+          </Button> 
+        </div>
+      </CardContent>
+    </Card>
+  )
+}

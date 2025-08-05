@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { CopilotChat, useCopilotChatSuggestions } from "@copilotkit/react-ui"
@@ -22,10 +22,11 @@ import {
 } from "lucide-react"
 import { useCoAgent, useCoAgentStateRender, useCopilotAction, useCopilotChat } from "@copilotkit/react-core"
 import { ToolLogs } from "@/components/ui/tool-logs"
-import { XPost, XPostPreview } from "@/components/ui/x-post"
-import { LinkedInPost, LinkedInPostPreview } from "@/components/ui/linkedin-post"
+import { XPost, XPostPreview, XPostCompact } from "@/components/ui/x-post"
+import { LinkedInPost, LinkedInPostPreview, LinkedInPostCompact } from "@/components/ui/linkedin-post"
 import { Button } from "@/components/ui/button"
 import { initialPrompt, suggestionPrompt } from "./prompts/prompts"
+import { Textarea } from "@/components/ui/textarea"
 
 
 const agents = [
@@ -86,7 +87,7 @@ export default function GoogleDeepMindChatUI() {
   const [selectedAgent, setSelectedAgent] = useState(agents[0])
   const [showColumns, setShowColumns] = useState(false)
   const [posts, setPosts] = useState<PostInterface>({ tweet: { title: "", content: "" }, linkedIn: { title: "", content: "" } })
-
+  const [isAgentActive, setIsAgentActive] = useState(false)
   const { setState, running } = useCoAgent({
     name: "post_generation_agent",
     initialState: {
@@ -144,13 +145,16 @@ export default function GoogleDeepMindChatUI() {
       }
     ],
     render: ({ args }) => {
-      console.log(args)
+      console.log("Rendering posts with args:", args)
       return <>
-        <div className="px-2">
-          <XPost title={args.tweet?.title || ""} content={args.tweet?.content || ""} />
+        <div className="px-2 mb-3">
+          <XPostCompact title={args.tweet?.title || ""} content={args.tweet?.content || ""} />
         </div>
         <div className="px-2">
-          <LinkedInPost title={args.linkedIn?.title || ""} content={args.linkedIn?.content || ""} />
+          <LinkedInPostCompact title={args.linkedIn?.title || ""} content={args.linkedIn?.content || ""} />
+        </div>
+        <div className="px-2 mt-2 text-xs text-gray-500">
+          Debug: Using compact components
         </div>
       </>
     },
@@ -166,7 +170,7 @@ export default function GoogleDeepMindChatUI() {
   })
 
   useCopilotChatSuggestions({
-    available : "enabled",
+    available: "enabled",
     instructions: suggestionPrompt,
   })
 
@@ -235,8 +239,43 @@ export default function GoogleDeepMindChatUI() {
 
 
         <CopilotChat className="h-[58vh]" labels={{
-          initial : initialPrompt
-        }} />
+          initial: initialPrompt
+        }}
+          Input={({ onSend, inProgress }) => {
+            useEffect(() => {
+              if(inProgress) {
+                setIsAgentActive(true)
+              } else {
+                setIsAgentActive(false)
+              }
+            }, [inProgress])
+            const [input, setInput] = useState("")
+            return (<>
+              <div className="space-y-5 px-4 py-2">
+
+                <form className="flex flex-col gap-3">
+                  <Textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Type your message..."
+                    className="min-h-[80px] resize-none rounded-xl border-muted-foreground/20 p-3"
+                  />
+                  <Button disabled={inProgress}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      if(input.trim() === "") return
+                      console.log("sending message")
+                      onSend(input)
+                      setInput("")
+                    }} className="self-end rounded-xl px-5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white">
+                    <Send className="mr-2 h-4 w-4" />
+                    Send
+                  </Button>
+                </form>
+              </div>
+            </>)
+          }}
+        />
 
       </div>
 
@@ -257,7 +296,7 @@ export default function GoogleDeepMindChatUI() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {running && <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-sm">
+              {isAgentActive && <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-sm">
                 <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
                 Live Research
               </Badge>}
@@ -306,18 +345,18 @@ export default function GoogleDeepMindChatUI() {
                       role: Role.User,
                       content: action.prompt
                     }))}
-                    >
-                <action.icon
-                  className={`w-6 h-6 ${action.color} group-hover:scale-110 transition-transform duration-200`}
-                />
-                <span className="text-sm font-medium">{action.label}</span>
-              </Button>
-                  ))}
-            </div>
+                  >
+                    <action.icon
+                      className={`w-6 h-6 ${action.color} group-hover:scale-110 transition-transform duration-200`}
+                    />
+                    <span className="text-sm font-medium">{action.label}</span>
+                  </Button>
+                ))}
+              </div>
             </div>
           )}
+        </div>
       </div>
-    </div>
     </div >
   )
 }
