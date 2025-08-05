@@ -153,9 +153,6 @@ export default function GoogleDeepMindChatUI() {
         <div className="px-2">
           <LinkedInPostCompact title={args.linkedIn?.title || ""} content={args.linkedIn?.content || ""} />
         </div>
-        <div className="px-2 mt-2 text-xs text-gray-500">
-          Debug: Using compact components
-        </div>
       </>
     },
     handler: (args) => {
