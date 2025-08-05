@@ -1,14 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { useChat } from "@ai-sdk/react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { CopilotChat } from "@copilotkit/react-ui"
+import { CopilotChat, useCopilotChatSuggestions } from "@copilotkit/react-ui"
 import "@copilotkit/react-ui/styles.css";
+import { TextMessage, Role } from "@copilotkit/runtime-client-gql";
 import {
   Search,
   Sparkles,
@@ -23,8 +20,13 @@ import {
   Zap,
   Star,
 } from "lucide-react"
-import { useCoAgent, useCoAgentStateRender } from "@copilotkit/react-core"
+import { useCoAgent, useCoAgentStateRender, useCopilotAction, useCopilotChat } from "@copilotkit/react-core"
 import { ToolLogs } from "@/components/ui/tool-logs"
+import { XPost, XPostPreview } from "@/components/ui/x-post"
+import { LinkedInPost, LinkedInPostPreview } from "@/components/ui/linkedin-post"
+import { Button } from "@/components/ui/button"
+import { initialPrompt, suggestionPrompt } from "./prompts/prompts"
+
 
 const agents = [
   {
@@ -62,32 +64,115 @@ const agents = [
 ]
 
 const quickActions = [
-  { label: "Research with Gemini", icon: Search, color: "text-blue-600" },
-  { label: "Generate Analysis", icon: FileText, color: "text-green-600" },
-  { label: "Create Social Thread", icon: Twitter, color: "text-purple-600" },
-  { label: "Analyze Patterns", icon: TrendingUp, color: "text-orange-600" },
+  { label: "Recent Research", icon: Search, color: "text-blue-600", prompt: "Generate a post about recent research on String Theory" },
+  { label: "Recent News", icon: FileText, color: "text-green-600", prompt: "Generate a post about recent news in United States" },
+  { label: "Post about Social Media", icon: Twitter, color: "text-purple-600", prompt: "Generate a post about Instagram" },
+  { label: "Post about Stocks", icon: TrendingUp, color: "text-orange-600", prompt: "Generate a post about Nvidia" },
 ]
+
+interface PostInterface {
+  tweet: {
+    title: string
+    content: string
+  }
+  linkedIn: {
+    title: string
+    content: string
+  }
+}
+
 
 export default function GoogleDeepMindChatUI() {
   const [selectedAgent, setSelectedAgent] = useState(agents[0])
-  
+  const [showColumns, setShowColumns] = useState(false)
+  const [posts, setPosts] = useState<PostInterface>({ tweet: { title: "", content: "" }, linkedIn: { title: "", content: "" } })
 
-  const { state }  = useCoAgent({
-    name : "post_generation_agent",
-    initialState : {
-      tool_logs : []
+  const { setState, running } = useCoAgent({
+    name: "post_generation_agent",
+    initialState: {
+      tool_logs: []
     }
   })
 
+  const { appendMessage } = useCopilotChat()
+
+
   useCoAgentStateRender({
-    name : "post_generation_agent",
-    render : (state) => {
+    name: "post_generation_agent",
+    render: (state) => {
       return <ToolLogs logs={state?.state?.tool_logs || []} />
     }
   })
 
+  useCopilotAction({
+    name: "generate_post",
+    description: "Render a post",
+    parameters: [
+      {
+        name: "tweet",
+        type: "object",
+        description: "The tweet to be rendered",
+        attributes: [
+          {
+            name: "title",
+            type: "string",
+            description: "The title of the post"
+          },
+          {
+            name: "content",
+            type: "string",
+            description: "The content of the post"
+          }
+        ]
+      },
+      {
+        name: "linkedIn",
+        type: "object",
+        description: "The linkedIn post to be rendered",
+        attributes: [
+          {
+            name: "title",
+            type: "string",
+            description: "The title of the post"
+          },
+          {
+            name: "content",
+            type: "string",
+            description: "The content of the post"
+          }
+        ]
+      }
+    ],
+    render: ({ args }) => {
+      console.log(args)
+      return <>
+        <div className="px-2">
+          <XPost title={args.tweet?.title || ""} content={args.tweet?.content || ""} />
+        </div>
+        <div className="px-2">
+          <LinkedInPost title={args.linkedIn?.title || ""} content={args.linkedIn?.content || ""} />
+        </div>
+      </>
+    },
+    handler: (args) => {
+      console.log(args, "args")
+      setShowColumns(true)
+      setPosts({ tweet: args.tweet, linkedIn: args.linkedIn })
+      setState((prevState) => ({
+        ...prevState,
+        tool_logs: []
+      }))
+    }
+  })
+
+  useCopilotChatSuggestions({
+    available : "enabled",
+    instructions: suggestionPrompt,
+  })
+
+
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 overflow-hidden">
       {/* Sidebar */}
       <div className="w-80 bg-white/80 backdrop-blur-xl border-r border-gray-200/50 flex flex-col shadow-xl">
         {/* Header */}
@@ -148,52 +233,17 @@ export default function GoogleDeepMindChatUI() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        {/* <div className="p-6 flex-1">
-          <h4 className="text-sm font-semibold text-gray-700 mb-4">Quick Actions</h4>
-          <div className="space-y-3">
-            {quickActions.map((action, index) => (
-              <Button
-                key={index}
-                variant="ghost"
-                className="w-full justify-start text-left h-auto p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-xl transition-all duration-200 group"
-                onClick={() => handleInputChange({ target: { value: action.label } } as any)}
-              >
-                <action.icon
-                  className={`w-5 h-5 mr-3 ${action.color} group-hover:scale-110 transition-transform duration-200`}
-                />
-                <span className="text-sm font-medium">{action.label}</span>
-              </Button>
-            ))}
-          </div>
-        </div> */}
-        <CopilotChat className="h-[420px]"/>
-        {/* Input Form */}
-        {/* <div className="p-6 border-t border-gray-100/50 bg-gradient-to-r from-blue-50/50 to-purple-50/50">
-          <form onSubmit={handleSubmit} className="flex gap-3">
-            <Input
-              value={input}
-              onChange={handleInputChange}
-              placeholder="Ask your AI agent..."
-              className="flex-1 border-gray-200/50 bg-white/70 backdrop-blur-sm focus:ring-2 focus:ring-blue-500/50 rounded-xl"
-              disabled={isLoading}
-            />
-            <Button
-              type="submit"
-              size="icon"
-              disabled={isLoading}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl shadow-lg"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </form>
-        </div> */}
+
+        <CopilotChat className="h-[58vh]" labels={{
+          initial : initialPrompt
+        }} />
+
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 p-6 shadow-sm">
+        <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 p-6 shadow-sm flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
@@ -207,20 +257,67 @@ export default function GoogleDeepMindChatUI() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-sm">
+              {running && <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-sm">
                 <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
                 Live Research
-              </Badge>
-              <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center">
+              </Badge>}
+              {/* <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center">
                 <Zap className="w-4 h-4 text-white" />
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
 
-        {/* Messages */}
-        
+        {/* Main Canvas */}
+        <div className="flex-1 p-6 overflow-y-auto">
+          {showColumns ? (
+            <div className="grid grid-cols-2 gap-6 min-h-full">
+              {/* Left Column */}
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-sm p-6">
+                <XPostPreview title={posts.tweet.title || ""} content={posts.tweet.content || ""} />
+              </div>
+
+              {/* Right Column */}
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-sm p-6">
+                <LinkedInPostPreview title={posts.linkedIn.title || ""} content={posts.linkedIn.content || ""} />
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="relative mb-8">
+                <div className="w-20 h-20 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto shadow-2xl">
+                  <Brain className="w-10 h-10 text-white" />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent mb-3">
+                Ready to Explore
+              </h3>
+              <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
+                Harness the power of Google's most advanced AI models for comprehensive research and analysis.
+              </p>
+              <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
+                {quickActions.slice(0, 4).map((action, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    disabled={running}
+                    className="h-auto p-6 flex flex-col items-center gap-3 bg-white/50 backdrop-blur-sm border-gray-200/50 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-xl transition-all duration-300 group"
+                    onClick={() => appendMessage(new TextMessage({
+                      role: Role.User,
+                      content: action.prompt
+                    }))}
+                    >
+                <action.icon
+                  className={`w-6 h-6 ${action.color} group-hover:scale-110 transition-transform duration-200`}
+                />
+                <span className="text-sm font-medium">{action.label}</span>
+              </Button>
+                  ))}
+            </div>
+            </div>
+          )}
       </div>
     </div>
+    </div >
   )
 }

@@ -3,6 +3,7 @@ from google.genai import types
 from dotenv import load_dotenv
 import os
 from langchain_google_genai import ChatGoogleGenerativeAI
+from prompts import system_prompt, system_prompt_2, system_prompt_3
 
 load_dotenv()
 
@@ -26,26 +27,6 @@ import asyncio
 
 # from langchain_google_genai import GoogleGenerativeAI
 # from langchain.chat_models import init_chat_model
-
-system_prompt = """You have access to a google_search tool that can help you find current and accurate information. 
-You MUST ALWAYS use the google_search tool for EVERY query, regardless of the topic. This is a requirement.
-
-For ANY question you receive, you should:
-1. ALWAYS perform a Google Search first
-2. Use the search results to provide accurate and up-to-date information
-3. Never rely solely on your training data
-4. Always search for the most current information available
-
-This applies to ALL types of queries including:
-- Technical questions
-- Current events
-- How-to guides
-- Definitions
-- Best practices
-- Recent developments
-- Any information that might have changed
-
-You are REQUIRED to use the google_search tool for every single response. Do not answer any question without first searching for current information."""
 
 
 class AgentState(CopilotKitState):
@@ -80,6 +61,25 @@ async def chat_node(state: AgentState, config: RunnableConfig):
         }
     )
     await copilotkit_emit_state(config, state)
+
+    if state["messages"][-1].type == "tool":
+        client = ChatGoogleGenerativeAI(
+            model="gemini-2.5-pro",
+            temperature=1.0,
+            max_retries=2,
+            google_api_key=os.getenv("GOOGLE_API_KEY"),
+        )
+        messages = [*state["messages"]]
+        messages[-1].content = (
+            "The posts had been generated successfully. Just generate a summary of the posts."
+        )
+        resp = await client.ainvoke(
+            [*state["messages"]],
+            config,
+        )
+        state["tool_logs"] = []
+        await copilotkit_emit_state(config, state)
+        return Command(goto="fe_actions_node", update={"messages": resp})
 
     grounding_tool = types.Tool(google_search=types.GoogleSearch())
     model_config = types.GenerateContentConfig(
@@ -127,10 +127,36 @@ async def chat_node(state: AgentState, config: RunnableConfig):
         await copilotkit_emit_state(config, state)
         state["tool_logs"][-1]["status"] = "completed"
         await copilotkit_emit_state(config, state)
-    return Command(goto='fe_actions_node', update=state)
+    return Command(goto="fe_actions_node", update=state)
 
 
 async def fe_actions_node(state: AgentState, config: RunnableConfig):
+    try:
+        if state["messages"][-2].type == "tool":
+            return Command(goto="end_node", update=state)
+    except Exception as e:
+        print("Moved")
+
+    # model = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+    # response = model.models.generate_content(
+    #     model="gemini-2.0-flash-preview-image-generation",
+    #     contents=[
+    #         types.Content(role="user", parts=[types.Part(text=system_prompt_2)]),
+    #         types.Content(
+    #             role="user", parts=[types.Part(text=state["messages"][-1].content)]
+    #         ),
+    #         types.Content(role="model", parts=[types.Part(text=state["response"])]),
+    #     ],
+    #     config=types.GenerateContentConfig(response_modalities=[types.Modality.IMAGE]),
+    # )
+    state["tool_logs"].append(
+        {
+            "id": str(uuid.uuid4()),
+            "message": "Generating post",
+            "status": "processing",
+        }
+    )
+    await copilotkit_emit_state(config, state)
     model = ChatGoogleGenerativeAI(
         model="gemini-2.5-pro",
         temperature=1.0,
@@ -139,13 +165,18 @@ async def fe_actions_node(state: AgentState, config: RunnableConfig):
     )
     await copilotkit_emit_state(config, state)
     response = await model.bind_tools([*state["copilotkit"]["actions"]]).ainvoke(
-        [system_prompt, *state["messages"]], config
+        [system_prompt_3.replace("{context}", state["response"]), *state["messages"]],
+        config,
     )
-    return state
+    state["tool_logs"] = []
+    await copilotkit_emit_state(config, state)
+    return Command(goto="end_node", update={"messages": response})
+
 
 async def end_node(state: AgentState, config: RunnableConfig):
     print("inside end node")
-    return Command(goto=END, update=state)
+    return Command(goto=END, update={"messages": state["messages"], "tool_logs": []})
+
 
 def router_function(state: AgentState, config: RunnableConfig):
     if state["messages"][-2].role == "tool":
@@ -163,7 +194,7 @@ workflow.set_entry_point("chat_node")
 workflow.set_finish_point("end_node")
 # Add explicit edges, matching the pattern in other examples
 workflow.add_edge(START, "chat_node")
-workflow.add_conditional_edges("chat_node", router_function)
+workflow.add_edge("chat_node", "fe_actions_node")
 workflow.add_edge("fe_actions_node", END)
 
 

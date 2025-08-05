@@ -11,14 +11,8 @@ const serviceAdapter = new GoogleGenerativeAIAdapter();
  
 const runtime = new CopilotRuntime({
   remoteEndpoints : [{
-    url : "http://localhost:8000/copilotkit",
+    url : process.env.NEXT_PUBLIC_LANGGRAPH_URL || "http://localhost:8000/copilotkit",
   }]
-  // agents : {
-  //   post_generation_agent : new LangGraphAgent({
-  //     deploymentUrl : "http://localhost:8000/copilotkit",
-  //     graphId : "post_generation_agent"
-  //   })
-  // }
 });
  
 export const POST = async (req: NextRequest) => {

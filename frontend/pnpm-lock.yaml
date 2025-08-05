@@ -23,6 +23,9 @@ importers:
       '@copilotkit/runtime':
         specifier: ^1.9.3
         version: 1.9.3(@ag-ui/client@0.0.35)(@ag-ui/core@0.0.35)(@ag-ui/encoder@0.0.35)(@ag-ui/proto@0.0.35)(@aws-crypto/sha256-js@5.2.0)(@aws-sdk/client-bedrock-agent-runtime@3.859.0)(@aws-sdk/client-bedrock-runtime@3.859.0)(@aws-sdk/client-kendra@3.859.0)(@aws-sdk/credential-provider-node@3.859.0)(@browserbasehq/sdk@2.6.0)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.54.2)(deepmerge@4.3.1)(dotenv@16.6.1)(openai@4.104.0(ws@8.18.3)(zod@3.25.67))(zod@3.25.67))(@ibm-cloud/watsonx-ai@1.6.10)(@opentelemetry/api@1.9.0)(@smithy/util-utf8@2.3.0)(axios@1.11.0)(fast-xml-parser@5.2.5)(google-auth-library@8.9.0)(ibm-cloud-sdk-core@5.4.2)(jsonwebtoken@9.0.2)(lodash@4.17.21)(playwright@1.54.2)(react@19.1.1)(weaviate-client@3.8.0)(ws@8.18.3)
+      '@copilotkit/runtime-client-gql':
+        specifier: ^1.9.3
+        version: 1.9.3(graphql@16.11.0)(react@19.1.1)
       '@hookform/resolvers':
         specifier: ^3.10.0
         version: 3.10.0(react-hook-form@7.62.0(react@19.1.1))
@@ -8123,9 +8126,17 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  axios@1.11.0(debug@4.4.1):
+  axios@1.11.0:
     dependencies:
       follow-redirects: 1.15.11(debug@4.3.2)
+      form-data: 4.0.4
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
+
+  axios@1.11.0(debug@4.4.1):
+    dependencies:
+      follow-redirects: 1.15.11(debug@4.4.1)
       form-data: 4.0.4
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
@@ -8348,7 +8359,7 @@ snapshots:
       '@trpc/client': 11.4.3(@trpc/server@11.4.3(typescript@5.9.2))(typescript@5.9.2)
       '@trpc/server': 11.4.3(typescript@5.9.2)
       ansis: 3.17.0
-      axios: 1.11.0(debug@4.4.1)
+      axios: 1.11.0
       chalk: 5.5.0
       conf: 13.1.0
       cors: 2.8.5
@@ -8711,6 +8722,10 @@ snapshots:
     optionalDependencies:
       debug: 4.3.2
 
+  follow-redirects@1.15.11(debug@4.4.1):
+    optionalDependencies:
+      debug: 4.4.1(supports-color@8.1.1)
+
   form-data-encoder@1.7.2: {}
 
   form-data@4.0.4:
@@ -9026,7 +9041,7 @@ snapshots:
       isstream: 0.1.2
       jsonwebtoken: 9.0.2
       mime-types: 2.1.35
-      retry-axios: 2.6.0(axios@1.11.0(debug@4.4.1))
+      retry-axios: 2.6.0(axios@1.11.0)
       tough-cookie: 4.1.4
     transitivePeerDependencies:
       - supports-color
@@ -9230,7 +9245,7 @@ snapshots:
       zod: 3.25.67
     optionalDependencies:
       '@langchain/aws': 0.1.13(@langchain/core@0.3.66(@opentelemetry/api@1.9.0)(openai@4.104.0(ws@8.18.3)(zod@3.25.67)))
-      axios: 1.11.0(debug@4.4.1)
+      axios: 1.11.0
     transitivePeerDependencies:
       - '@opentelemetry/api'
       - '@opentelemetry/exporter-trace-otlp-proto'
@@ -10219,7 +10234,7 @@ snapshots:
 
   posthog-node@4.18.0:
     dependencies:
-      axios: 1.11.0(debug@4.4.1)
+      axios: 1.11.0
     transitivePeerDependencies:
       - debug
 
@@ -10530,9 +10545,9 @@ snapshots:
       onetime: 7.0.0
       signal-exit: 4.1.0
 
-  retry-axios@2.6.0(axios@1.11.0(debug@4.4.1)):
+  retry-axios@2.6.0(axios@1.11.0):
     dependencies:
-      axios: 1.11.0(debug@4.4.1)
+      axios: 1.11.0
 
   retry@0.13.1: {}
 
