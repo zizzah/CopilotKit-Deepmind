@@ -23,6 +23,8 @@ import {
   Zap,
   Star,
 } from "lucide-react"
+import { useCoAgent, useCoAgentStateRender } from "@copilotkit/react-core"
+import { ToolLogs } from "@/components/ui/tool-logs"
 
 const agents = [
   {
@@ -69,6 +71,20 @@ const quickActions = [
 export default function GoogleDeepMindChatUI() {
   const [selectedAgent, setSelectedAgent] = useState(agents[0])
   
+
+  const { state }  = useCoAgent({
+    name : "post_generation_agent",
+    initialState : {
+      tool_logs : []
+    }
+  })
+
+  useCoAgentStateRender({
+    name : "post_generation_agent",
+    render : (state) => {
+      return <ToolLogs logs={state?.state?.tool_logs || []} />
+    }
+  })
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">

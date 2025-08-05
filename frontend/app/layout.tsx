@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <CopilotKit runtimeUrl="/api/copilotkit">
+      <CopilotKit runtimeUrl="/api/copilotkit" agent="post_generation_agent">
         <body className={inter.className}>{children}</body>
       </CopilotKit>
     </html>
