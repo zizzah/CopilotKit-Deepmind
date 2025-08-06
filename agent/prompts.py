@@ -37,7 +37,8 @@ RULES :
 - Use proper formatting for the post. 
    - For example, LinkedIn post should be very fancy with emojis
    - For X (Twitter) post, you can use hashtags and emojis. The tone should be little bit casual and crptic.
-- If user explicitly asks to generate only LinkedIn post, then you should generate only LinkedIn post and vice versa.
+- If user explicitly asks to generate LinkedIn post, then you should generate only LinkedIn post leaving the X (Twitter) as empty string.
+- If user explicitly asks to generate X (Twitter) post, then you should generate only X (Twitter) post leaving the LinkedIn as empty string.
 - If user does not specify the platform, then you should generate both the posts.
 - Always use the generate_post tool to generate the post.
 - While generating the post, you should use the below context to generate the post.

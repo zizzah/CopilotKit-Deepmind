@@ -56,7 +56,7 @@ export function LinkedInPost({
   const defaultViews = 45600
 
   return (
-    <Card className={cn("w-full max-w-md bg-white border border-gray-200/50 shadow-sm hover:shadow-md transition-shadow duration-200", className)}>
+    <Card className={cn("w-full bg-white border border-gray-200/50 shadow-sm hover:shadow-md transition-shadow duration-200", className)}>
       <CardContent className="p-4">
         {/* Header */}
         <div className="flex items-start gap-3 mb-3">
@@ -200,14 +200,14 @@ export function LinkedInLogo({ className }: { className?: string }) {
 export function LinkedInPostPreview({title, content}: {title: string, content: string}) {
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center ml-4 mb-4">
         <LinkedInLogo />
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="outline" className="text-xs ml-2">
           Preview
         </Badge>
       </div>
       
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 w-full">
         <LinkedInPost title={title} content={content} />
       </div>
     </div>
@@ -332,10 +332,10 @@ export function LinkedInPostCompact({
         </div>
 
         {/* Action Bar */}
-        <div className="flex items-center justify-between pt-1 border-t border-gray-100">
+        <div className="flex items-center gap-11 pt-1 border-t border-gray-100">
           <Button 
             variant="ghost" 
-            size="sm" 
+            size="icon" 
             className="flex items-center gap-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 h-6 px-2"
           >
             <ThumbsUp className="w-2 h-2" />
@@ -344,7 +344,7 @@ export function LinkedInPostCompact({
           
           <Button 
             variant="ghost" 
-            size="sm" 
+            size="icon" 
             className="flex items-center gap-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 h-6 px-2"
           >
             <MessageCircle className="w-2 h-2" />
@@ -353,7 +353,7 @@ export function LinkedInPostCompact({
           
           <Button 
             variant="ghost" 
-            size="sm" 
+            size="icon" 
             className="flex items-center gap-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 h-6 px-2"
           >
             <Repeat2 className="w-2 h-2" />

@@ -90,7 +90,7 @@ async def chat_node(state: AgentState, config: RunnableConfig):
         config = RunnableConfig(recursion_limit=25)
     else:
         # Use CopilotKit's custom config functions to properly set up streaming
-        config = copilotkit_customize_config(config, emit_messages=True)
+        config = copilotkit_customize_config(config, emit_messages=True, emit_tool_calls=True)
 
     # 2. Bind the tools to the model
     response = model.models.generate_content(

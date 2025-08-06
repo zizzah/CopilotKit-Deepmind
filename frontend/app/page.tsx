@@ -32,36 +32,20 @@ import { Textarea } from "@/components/ui/textarea"
 const agents = [
   {
     id: "research",
-    name: "Gemini Research",
-    description: "Advanced multimodal research and analysis capabilities",
+    name: "Post Generator",
+    description: "Generate posts for Linkedin and X with Gemini and Google web search",
     icon: Search,
     gradient: "from-blue-500 to-purple-600",
     active: true,
   },
   {
     id: "content",
-    name: "DeepMind Writer",
-    description: "Scientific content generation with reasoning",
+    name: "Stack Analyst",
+    description: "Analyze the stack of a Project and generate insights from it",
     icon: FileText,
     gradient: "from-green-500 to-teal-600",
     active: false,
-  },
-  {
-    id: "social",
-    name: "Gemini Social",
-    description: "Intelligent social media content creation",
-    icon: Twitter,
-    gradient: "from-purple-500 to-pink-600",
-    active: false,
-  },
-  {
-    id: "trends",
-    name: "DeepMind Analytics",
-    description: "Advanced pattern recognition and trend analysis",
-    icon: TrendingUp,
-    gradient: "from-orange-500 to-red-600",
-    active: false,
-  },
+  }
 ]
 
 const quickActions = [
@@ -145,14 +129,17 @@ export default function GoogleDeepMindChatUI() {
       }
     ],
     render: ({ args }) => {
-      console.log("Rendering posts with args:", args)
+      useEffect(() => {
+        console.log("Rendering posts with args:", args)
+        // console.log(posts.linkedIn.content == '')
+      }, [args])
       return <>
-        <div className="px-2 mb-3">
+        {args.tweet?.content != '' && <div className="px-2 mb-3">
           <XPostCompact title={args.tweet?.title || ""} content={args.tweet?.content || ""} />
-        </div>
-        <div className="px-2">
+        </div>}
+        {args.linkedIn?.content != '' && <div className="px-2">
           <LinkedInPostCompact title={args.linkedIn?.title || ""} content={args.linkedIn?.content || ""} />
-        </div>
+        </div>}
       </>
     },
     handler: (args) => {
@@ -175,9 +162,9 @@ export default function GoogleDeepMindChatUI() {
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 overflow-hidden">
       {/* Sidebar */}
-      <div className="w-80 bg-white/80 backdrop-blur-xl border-r border-gray-200/50 flex flex-col shadow-xl">
+      <div className="flex flex-col min-h-screen w-80 bg-white/80 backdrop-blur-xl border-r border-gray-200/50 shadow-xl">
         {/* Header */}
-        <div className="p-6 border-b border-gray-100/50">
+        <div className="h-50 p-6 border-b border-gray-100/50">
           <div className="flex items-center gap-3 mb-4">
             <div className="relative">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
@@ -191,7 +178,7 @@ export default function GoogleDeepMindChatUI() {
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                 DeepMind × Gemini
               </h1>
-              <p className="text-sm text-gray-600">Advanced AI Research Platform</p>
+              <p className="text-sm text-gray-600">Advanced AI Canvas</p>
             </div>
           </div>
 
@@ -200,7 +187,13 @@ export default function GoogleDeepMindChatUI() {
             <label className="text-sm font-semibold text-gray-700">Active Agent</label>
             <div className="relative">
               <select
-                className="w-full p-4 border border-gray-200/50 rounded-xl bg-white/50 backdrop-blur-sm text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 shadow-sm"
+                className="w-full p-4 pr-8 border border-gray-200/50 rounded-xl bg-white/50 backdrop-blur-sm text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 shadow-sm appearance-none"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                  backgroundPosition: 'right 0.5rem center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '1.5em 1.5em'
+                }}
                 value={selectedAgent.id}
                 onChange={(e) => setSelectedAgent(agents.find((a) => a.id === e.target.value) || agents[0])}
               >
@@ -215,10 +208,10 @@ export default function GoogleDeepMindChatUI() {
         </div>
 
         {/* Agent Info */}
-        <div className="p-6 border-b border-gray-100/50">
+        <div className="h-20 px-6 border-b border-gray-100/50">
           <div className="flex items-start gap-4">
             <div
-              className={`w-12 h-12 bg-gradient-to-r ${selectedAgent.gradient} rounded-xl flex items-center justify-center shadow-lg`}
+              className={`w-8 h-8 bg-gradient-to-r ${selectedAgent.gradient} rounded-xl flex items-center justify-center shadow-lg`}
             >
               <selectedAgent.icon className="w-6 h-6 text-white" />
             </div>
@@ -235,44 +228,56 @@ export default function GoogleDeepMindChatUI() {
         </div>
 
 
-        <CopilotChat className="h-[58vh]" labels={{
-          initial: initialPrompt
-        }}
-          Input={({ onSend, inProgress }) => {
-            useEffect(() => {
-              if(inProgress) {
-                setIsAgentActive(true)
-              } else {
-                setIsAgentActive(false)
-              }
-            }, [inProgress])
-            const [input, setInput] = useState("")
-            return (<>
-              <div className="space-y-5 px-4 py-2">
+        <div className="flex-1 overflow-auto">
 
-                <form className="flex flex-col gap-3">
-                  <Textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Type your message..."
-                    className="min-h-[80px] resize-none rounded-xl border-muted-foreground/20 p-3"
-                  />
-                  <Button disabled={inProgress}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      if(input.trim() === "") return
-                      console.log("sending message")
-                      onSend(input)
-                      setInput("")
-                    }} className="self-end rounded-xl px-5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white">
-                    <Send className="mr-2 h-4 w-4" />
-                    Send
-                  </Button>
-                </form>
-              </div>
-            </>)
+          {/* Chat Input at Bottom */}
+          <CopilotChat className="h-full p-2" labels={{
+            initial: initialPrompt
           }}
-        />
+            Input={({ onSend, inProgress }) => {
+              useEffect(() => {
+                if (inProgress) {
+                  setIsAgentActive(true)
+                } else {
+                  setIsAgentActive(false)
+                }
+              }, [inProgress])
+              const [input, setInput] = useState("")
+              return (<>
+                <div className="space-y-3">
+                  <form className="flex flex-col gap-3">
+                    <Textarea
+                      value={input}
+                      onKeyDown={(e) => {
+                        if (e.key.toLowerCase() === 'enter' && !inProgress) {
+                          appendMessage(new TextMessage({
+                            role: Role.User,
+                            content: input
+                          }))
+                        }
+                      }}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder="Type your message..."
+                      className="min-h-[80px] resize-none rounded-xl border-muted-foreground/20 p-3"
+                    />
+                    <Button disabled={inProgress}
+                      
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (input.trim() === "") return
+                        console.log("sending message")
+                        onSend(input)
+                        setInput("")
+                      }} className="self-end rounded-xl px-5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white">
+                      <Send className="mr-2 h-4 w-4" />
+                      Send
+                    </Button>
+                  </form>
+                </div>
+              </>)
+            }}
+          />
+        </div>
 
       </div>
 
@@ -287,9 +292,9 @@ export default function GoogleDeepMindChatUI() {
               </div>
               <div>
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
-                  Research Workspace
+                  Posts Generation Canvas
                 </h2>
-                <p className="text-sm text-gray-600">Powered by Google DeepMind & Gemini AI</p>
+                <p className="text-sm text-gray-600">Powered by Gemini AI & Google Web Search</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -307,16 +312,16 @@ export default function GoogleDeepMindChatUI() {
         {/* Main Canvas */}
         <div className="flex-1 p-6 overflow-y-auto">
           {showColumns ? (
-            <div className="grid grid-cols-2 gap-6 min-h-full">
-              {/* Left Column */}
-              <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-sm p-6">
-                <XPostPreview title={posts.tweet.title || ""} content={posts.tweet.content || ""} />
-              </div>
-
-              {/* Right Column */}
-              <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-sm p-6">
+            <div className="flex gap-6 min-h-full">
+              {/* LinkedIn Column - 75% */}
+              {posts.linkedIn.content != '' && <div className="w-[75%] h-full">
                 <LinkedInPostPreview title={posts.linkedIn.title || ""} content={posts.linkedIn.content || ""} />
-              </div>
+              </div>}
+
+              {/* X Post Column - 25% */}
+              {posts.tweet.content != '' && <div className="w-[25%] h-full">
+                <XPostPreview title={posts.tweet.title || ""} content={posts.tweet.content || ""} />
+              </div>}
             </div>
           ) : (
             <div className="text-center py-16">
@@ -329,7 +334,7 @@ export default function GoogleDeepMindChatUI() {
                 Ready to Explore
               </h3>
               <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
-                Harness the power of Google's most advanced AI models for comprehensive research and analysis.
+                Harness the power of Google's most advanced AI models for generating interactive LinkedIn and X Posts.
               </p>
               <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
                 {quickActions.slice(0, 4).map((action, index) => (
@@ -337,6 +342,7 @@ export default function GoogleDeepMindChatUI() {
                     key={index}
                     variant="outline"
                     disabled={running}
+
                     className="h-auto p-6 flex flex-col items-center gap-3 bg-white/50 backdrop-blur-sm border-gray-200/50 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-xl transition-all duration-300 group"
                     onClick={() => appendMessage(new TextMessage({
                       role: Role.User,

@@ -177,14 +177,14 @@ export function XPostPreview({title, content}: {title: string, content: string})
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center ml-4 mb-4">
         <XLogo />
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="outline" className="text-xs ml-2">
           Preview
         </Badge>
       </div>
       
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1">
         <XPost title={title} content={content} />
       </div>
     </div>
