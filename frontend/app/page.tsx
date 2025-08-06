@@ -164,7 +164,7 @@ export default function GoogleDeepMindChatUI() {
       {/* Sidebar */}
       <div className="flex flex-col min-h-screen w-80 bg-white/80 backdrop-blur-xl border-r border-gray-200/50 shadow-xl">
         {/* Header */}
-        <div className="h-50 p-6 border-b border-gray-100/50">
+        <div className="h-40 p-6 border-b border-gray-100/50">
           <div className="flex items-center gap-3 mb-4">
             <div className="relative">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
@@ -208,7 +208,7 @@ export default function GoogleDeepMindChatUI() {
         </div>
 
         {/* Agent Info */}
-        <div className="h-20 px-6 border-b border-gray-100/50">
+        {/* <div className="h-20 px-6 border-b border-gray-100/50">
           <div className="flex items-start gap-4">
             <div
               className={`w-8 h-8 bg-gradient-to-r ${selectedAgent.gradient} rounded-xl flex items-center justify-center shadow-lg`}
@@ -225,7 +225,7 @@ export default function GoogleDeepMindChatUI() {
               <p className="text-sm text-gray-600 leading-relaxed">{selectedAgent.description}</p>
             </div>
           </div>
-        </div>
+        </div> */}
 
 
         <div className="flex-1 overflow-auto">
