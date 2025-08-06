@@ -7,8 +7,8 @@ import { CopilotKit } from "@copilotkit/react-core"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "DeepMind × Gemini - Advanced AI Research Platform",
-  description: "Powered by Google's most advanced AI models for comprehensive research and analysis",
+  title: "DeepMind × Gemini",
+  description: "Powered by Google's most advanced AI models for generating LinkedIn and X posts",
   generator: 'v0.dev'
 }
 
