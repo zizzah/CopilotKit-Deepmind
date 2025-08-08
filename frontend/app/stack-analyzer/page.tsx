@@ -27,7 +27,7 @@ import { ToolLogs } from "@/components/ui/tool-logs"
 import { XPost, XPostPreview, XPostCompact } from "@/components/ui/x-post"
 import { LinkedInPost, LinkedInPostPreview, LinkedInPostCompact } from "@/components/ui/linkedin-post"
 import { Button } from "@/components/ui/button"
-import { initialPrompt, suggestionPrompt1 } from "../prompts/prompts"
+import { initialPrompt1, suggestionPrompt1 } from "../prompts/prompts"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { useParams, useRouter, usePathname, useSearchParams } from "next/navigation"
@@ -219,7 +219,7 @@ export default function StackAnalyzer() {
 
                     {/* Chat Input at Bottom */}
                     <CopilotChat className="h-full p-2" labels={{
-                        initial: initialPrompt
+                        initial: initialPrompt1
                     }}
                         Input={({ onSend, inProgress }) => {
                             useEffect(() => {
