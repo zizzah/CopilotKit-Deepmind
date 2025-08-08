@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { CopilotKit } from "@copilotkit/react-core"
 import { LayoutProvider } from "./contexts/LayoutContext"
+import Wrapper from "./wrapper"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -20,13 +21,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <CopilotKit runtimeUrl="/api/copilotkit" agent="stack_analysis_agent">
-        <body className={inter.className}>
-          <LayoutProvider>
+      <LayoutProvider>
+        <Wrapper>
+          <body className={inter.className}>
             {children}
-          </LayoutProvider>
-        </body>
-      </CopilotKit>
+          </body>
+        </Wrapper>
+      </LayoutProvider>
     </html>
   )
 }

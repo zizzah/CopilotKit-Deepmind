@@ -9,19 +9,21 @@ interface LayoutState {
   headerContent?: ReactNode
   sidebarContent?: ReactNode
   theme: 'light' | 'dark' | 'auto'
+  agent: string
 }
 
 interface LayoutContextType {
   layoutState: LayoutState
   updateLayout: (updates: Partial<LayoutState>) => void
-  resetLayout: () => void
+  resetLayout: () => void 
 }
 
 const defaultLayoutState: LayoutState = {
   title: "DeepMind × Gemini",
   description: "Powered by Google's most advanced AI models for generating LinkedIn and X posts",
   showHeader: true,
-  theme: 'light'
+  theme: 'light',
+  agent: "stack_analysis_agent"
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined)

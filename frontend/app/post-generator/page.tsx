@@ -30,13 +30,13 @@ import { Button } from "@/components/ui/button"
 import { initialPrompt, suggestionPrompt } from "../prompts/prompts"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import { useParams, useRouter, usePathname, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useLayout } from "../contexts/LayoutContext"
 
 
 const agents = [
   {
-    id: "generator",
+    id: "post_generation_agent",
     name: "Post Generator",
     description: "Generate posts for Linkedin and X with Gemini and Google web search",
     icon: Search,
@@ -44,7 +44,7 @@ const agents = [
     active: true,
   },
   {
-    id: "analyzer",
+    id: "stack_analysis_agent",
     name: "Stack Analyst",
     description: "Analyze the stack of a Project and generate insights from it",
     icon: FileText,
@@ -73,10 +73,8 @@ interface PostInterface {
 
 
 export default function PostGenerator() {
-  const params = useParams()
   const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const { updateLayout } = useLayout()
   const [selectedAgent, setSelectedAgent] = useState(agents[0])
   const [showColumns, setShowColumns] = useState(false)
   const [posts, setPosts] = useState<PostInterface>({ tweet: { title: "", content: "" }, linkedIn: { title: "", content: "" } })
@@ -89,7 +87,7 @@ export default function PostGenerator() {
     }
   })
 
-  const { appendMessage } = useCopilotChat()
+  const { appendMessage, setMessages } = useCopilotChat()
 
 
   // Handle clicking outside dropdown to close it
@@ -246,6 +244,8 @@ export default function PostGenerator() {
                       key={agent.id}
                       onClick={() => {
                         if (selectedAgent.id != agent.id) {
+                            updateLayout({ agent: agent.id })
+                            setMessages([])
                             router.push(`/stack-analyzer`)
                         }
                         setIsDropdownOpen(false)

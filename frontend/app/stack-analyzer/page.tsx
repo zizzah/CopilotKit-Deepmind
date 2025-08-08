@@ -27,15 +27,17 @@ import { ToolLogs } from "@/components/ui/tool-logs"
 import { XPost, XPostPreview, XPostCompact } from "@/components/ui/x-post"
 import { LinkedInPost, LinkedInPostPreview, LinkedInPostCompact } from "@/components/ui/linkedin-post"
 import { Button } from "@/components/ui/button"
-import { initialPrompt, suggestionPrompt } from "../prompts/prompts"
+import { initialPrompt, suggestionPrompt1 } from "../prompts/prompts"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { useParams, useRouter, usePathname, useSearchParams } from "next/navigation"
+import { StackAnalysisCards } from "@/components/ui/stack-analysis-cards"
+import { useLayout } from "../contexts/LayoutContext"
 
 
 const agents = [
     {
-        id: "generator",
+        id: "post_generation_agent",
         name: "Post Generator",
         description: "Generate posts for Linkedin and X with Gemini and Google web search",
         icon: Search,
@@ -43,7 +45,7 @@ const agents = [
         active: true,
     },
     {
-        id: "analyzer",
+        id: "stack_analysis_agent",
         name: "Stack Analyst",
         description: "Analyze the stack of a Project and generate insights from it",
         icon: FileText,
@@ -53,10 +55,10 @@ const agents = [
 ]
 
 const quickActions = [
-    { label: "Recent Research", icon: Search, color: "text-blue-600", prompt: "Generate a post about recent research on String Theory" },
-    { label: "Recent News", icon: FileText, color: "text-green-600", prompt: "Generate a post about recent news in United States" },
-    { label: "Post about Social Media", icon: Twitter, color: "text-purple-600", prompt: "Generate a post about Instagram" },
-    { label: "Post about Stocks", icon: TrendingUp, color: "text-orange-600", prompt: "Generate a post about Nvidia" },
+    { label: "Staple", icon: FileText, color: "text-blue-600", prompt: "Analyze https://github.com/bertinetto/staple Github Repository" },
+    { label: "Vim-airline", icon: FileText, color: "text-green-600", prompt: "Analyze https://github.com/vim-airline/vim-airline Github Repository" },
+    { label: "Llama Index x AG-UI", icon: FileText, color: "text-purple-600", prompt: "Analyze https://github.com/copilotkit-support/open-ag-ui-demo-llamaindex Github Repository" },
+    { label: "Mastra x AG-UI", icon: FileText, color: "text-orange-600", prompt: "Analyze https://github.com/copilotkit-support/open-ag-ui-demo-mastra Github Repository" },
 ]
 
 interface PostInterface {
@@ -75,17 +77,23 @@ export default function StackAnalyzer() {
     const router = useRouter()
     const [selectedAgent, setSelectedAgent] = useState(agents[1])
     const [showColumns, setShowColumns] = useState(false)
-    const [posts, setPosts] = useState<PostInterface>({ tweet: { title: "", content: "" }, linkedIn: { title: "", content: "" } })
     const [isAgentActive, setIsAgentActive] = useState(false)
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-    const { setState, running } = useCoAgent({
+    const { updateLayout } = useLayout()
+    const { setState, running, state } = useCoAgent({
         name: "stack_analysis_agent",
         initialState: {
-            tool_logs: []
+            tool_logs: [],
+            show_cards : false,
+            analysis : ""
         }
     })
+    const { appendMessage, visibleMessages, setMessages } = useCopilotChat()
 
-    const { appendMessage } = useCopilotChat()
+    useEffect(() => {
+        console.log(state, "running", visibleMessages)
+    }, [state, visibleMessages])
+
 
 
     // Handle clicking outside dropdown to close it
@@ -110,83 +118,16 @@ export default function StackAnalyzer() {
     useCoAgentStateRender({
         name: "stack_analysis_agent",
         render: (state) => {
-            useEffect(() => {
-                console.log(state, "state")
-            }, [state])
             return <ToolLogs logs={state?.state?.tool_logs || []} />
-        }
-    })
-
-    useCopilotAction({
-        name: "generate_post",
-        description: "Render a post",
-        parameters: [
-            {
-                name: "tweet",
-                type: "object",
-                description: "The tweet to be rendered",
-                attributes: [
-                    {
-                        name: "title",
-                        type: "string",
-                        description: "The title of the post"
-                    },
-                    {
-                        name: "content",
-                        type: "string",
-                        description: "The content of the post"
-                    }
-                ]
-            },
-            {
-                name: "linkedIn",
-                type: "object",
-                description: "The linkedIn post to be rendered",
-                attributes: [
-                    {
-                        name: "title",
-                        type: "string",
-                        description: "The title of the post"
-                    },
-                    {
-                        name: "content",
-                        type: "string",
-                        description: "The content of the post"
-                    }
-                ]
-            }
-        ],
-        render: ({ args }) => {
-            useEffect(() => {
-                console.log("Rendering posts with args:", args)
-                // console.log(posts.linkedIn.content == '')
-            }, [args])
-            return <>
-                {args.tweet?.content != '' && <div className="px-2 mb-3">
-                    <XPostCompact title={args.tweet?.title || ""} content={args.tweet?.content || ""} />
-                </div>}
-                {args.linkedIn?.content != '' && <div className="px-2">
-                    <LinkedInPostCompact title={args.linkedIn?.title || ""} content={args.linkedIn?.content || ""} />
-                </div>}
-            </>
-        },
-        handler: (args) => {
-            console.log(args, "args")
-            setShowColumns(true)
-            setPosts({ tweet: args.tweet, linkedIn: args.linkedIn })
-            setState((prevState) => ({
-                ...prevState,
-                tool_logs: []
-            }))
         }
     })
 
     useCopilotChatSuggestions({
         available: "enabled",
-        instructions: suggestionPrompt,
+        instructions: suggestionPrompt1,
     })
 
-
+    
     return (
         <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 overflow-hidden">
             {/* Sidebar */}
@@ -245,6 +186,8 @@ export default function StackAnalyzer() {
                                             key={agent.id}
                                             onClick={() => {
                                                 if (selectedAgent.id != agent.id) {
+                                                    updateLayout({ agent: agent.id })
+                                                    setMessages([])
                                                     router.push(`/post-generator`)
                                                 }
                                                 setIsDropdownOpen(false)
@@ -355,18 +298,8 @@ export default function StackAnalyzer() {
 
                 {/* Main Canvas */}
                 <div className="flex-1 p-6 overflow-y-auto">
-                    {showColumns ? (
-                        <div className="flex gap-6 min-h-full">
-                            {/* LinkedIn Column - 75% */}
-                            {posts.linkedIn.content != '' && <div className="w-[75%] h-full">
-                                <LinkedInPostPreview title={posts.linkedIn.title || ""} content={posts.linkedIn.content || ""} />
-                            </div>}
-
-                            {/* X Post Column - 25% */}
-                            {posts.tweet.content != '' && <div className="w-[25%] h-full">
-                                <XPostPreview title={posts.tweet.title || ""} content={posts.tweet.content || ""} />
-                            </div>}
-                        </div>
+                    {(state?.show_cards || visibleMessages.length > 2) ? (
+                        <StackAnalysisCards analysis={state?.analysis} />
                     ) : (
                         <div className="text-center py-16">
                             <div className="relative mb-8">
@@ -378,14 +311,14 @@ export default function StackAnalyzer() {
                                 Ready to Explore
                             </h3>
                             <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
-                                Harness the power of Google's most advanced AI models for generating interactive LinkedIn and X Posts.
+                                Harness the power of Google's most advanced AI models for analyzing the stack of GitHub projects.
                             </p>
                             <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
                                 {quickActions.slice(0, 4).map((action, index) => (
                                     <Button
                                         key={index}
                                         variant="outline"
-                                        disabled={running}
+                                        disabled={isAgentActive}
 
                                         className="h-auto p-6 flex flex-col items-center gap-3 bg-white/50 backdrop-blur-sm border-gray-200/50 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-xl transition-all duration-300 group"
                                         onClick={() => appendMessage(new TextMessage({
