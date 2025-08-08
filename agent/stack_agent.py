@@ -13,6 +13,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.types import Command
 
 from copilotkit import CopilotKitState
 from copilotkit.langgraph import copilotkit_emit_state
@@ -29,6 +30,8 @@ class StackAgentState(CopilotKitState):
     tool_logs: List[Dict[str, Any]]
     analysis: Dict[str, Any]
     show_cards: bool
+    context : Dict[str, Any]
+    last_user_content : str
 
 
 # -------------------- Structured Output Schema --------------------
@@ -324,7 +327,16 @@ async def gather_context_node(state: StackAgentState, config: RunnableConfig):
     state["tool_logs"][-1]["status"] = "completed"
     await copilotkit_emit_state(config, state)
 
-    return {"analysis": {"context": context}}
+    return Command(
+        goto= "analyze",
+        update = {
+            "analysis": state["analysis"],
+            "context": context,
+            "tool_logs": state["tool_logs"],
+            "show_cards": False,
+            "last_user_content": last_user_content
+        }
+    )
 
 
 async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfig):
@@ -340,7 +352,7 @@ async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfi
     #     ],
     # )
 
-    context = state.get("analysis", {}).get("context", {})
+    context = state.get("context", {})
 
     state["tool_logs"] = state.get("tool_logs", [])
     state["tool_logs"].append(
@@ -413,9 +425,11 @@ async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfi
 
     state["tool_logs"][-1]["status"] = "completed"
     await copilotkit_emit_state(config, state)
+    messages[-1].content = state["last_user_content"]
     messages.append(AIMessage(tool_calls=tool_calls, id = tool_msg.id, type = "ai", content= ''))
     messages.append(ToolMessage(content= "The GitHub Repository has been analyzed", tool_call_id = tool_calls[0]["id"], type = "tool"))
     messages[0].content = "Generate a summary of the GitHub Repository. It should be in a concise and strictly textual"
+    
     client = ChatGoogleGenerativeAI(
         model="gemini-2.5-pro",
         temperature=0.4,
@@ -442,22 +456,30 @@ async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfi
     #         state.setdefault("analysis", {})["structured"] = parsed_json
     #     except Exception:
     #         pretty = text
-
+    state["messages"].append(AIMessage(content= model_response.content))
     # Return a message containing the analysis
-    return {
-        "messages": [
-            AIMessage(
-                content= model_response.content
-            )
-        ]
-    }
+    return Command(
+        goto= "end",
+        update = {
+            "messages": state["messages"],
+            "show_cards": True,
+            "analysis": state["analysis"]
+        }
+    )
 
 
 async def end_node(state: StackAgentState, config: RunnableConfig):
     # Clear logs and emit once more to update UI
     state["tool_logs"] = []
     await copilotkit_emit_state(config or RunnableConfig(recursion_limit=25), state)
-    return {"messages": state["messages"], "tool_logs": []}
+    return Command(
+        goto= END,
+        update = {
+            "messages": state["messages"],
+            "show_cards": True,
+            "analysis": state["analysis"]
+        }
+    )
 
 
 workflow = StateGraph(StackAgentState)
