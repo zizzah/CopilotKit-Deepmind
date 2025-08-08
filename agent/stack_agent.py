@@ -3,6 +3,7 @@ import re
 import base64
 import json
 from typing import Any, Dict, List, Optional, Tuple
+import uuid
 
 import requests
 from dotenv import load_dotenv
@@ -174,12 +175,15 @@ def _build_analysis_prompt(context: Dict[str, Any]) -> str:
 
 
 async def gather_context_node(state: StackAgentState, config: RunnableConfig):
+    # Ensure streaming is enabled
+    config = copilotkit_customize_config(config or RunnableConfig(recursion_limit=25), emit_messages=True, emit_tool_calls=True)
+
     # Determine URL from the latest user message
     last_user_content = state["messages"][-1].content if state["messages"] else ""
     parsed = _parse_github_url(last_user_content)
 
-    state.setdefault("tool_logs", [])
-    state["tool_logs"].append({"message": "Parsing GitHub URL", "status": "processing"})
+    state["tool_logs"] = state.get("tool_logs", [])
+    state["tool_logs"].append({"id": str(uuid.uuid4()), "message": "Parsing GitHub URL", "status": "processing"})
     await copilotkit_emit_state(config, state)
 
     if not parsed:
@@ -192,7 +196,9 @@ async def gather_context_node(state: StackAgentState, config: RunnableConfig):
 
     owner, repo = parsed
     state["tool_logs"][-1]["status"] = "completed"
-    state["tool_logs"].append({"message": "Fetching repository metadata", "status": "processing"})
+    await copilotkit_emit_state(config, state)
+
+    state["tool_logs"].append({"id": str(uuid.uuid4()), "message": "Fetching repository metadata", "status": "processing"})
     await copilotkit_emit_state(config, state)
 
     repo_info = _fetch_repo_info(owner, repo)
@@ -219,12 +225,14 @@ async def gather_context_node(state: StackAgentState, config: RunnableConfig):
 
 
 async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfig):
+    # Ensure streaming is enabled for this node as well
+    config = copilotkit_customize_config(config or RunnableConfig(recursion_limit=25), emit_messages=True, emit_tool_calls=False)
+
     context = state.get("analysis", {}).get("context", {})
 
-    state.setdefault("tool_logs", [])
-    state["tool_logs"].append({"message": "Analyzing stack with Gemini", "status": "processing"})
-    # Ensure CopilotKit streaming config is applied
-    config = copilotkit_customize_config(config, emit_messages=True, emit_tool_calls=False)
+    state["tool_logs"] = state.get("tool_logs", [])
+    state["tool_logs"].append({"id": str(uuid.uuid4()), "message": "Analyzing stack with Gemini", "status": "processing"})
+    await copilotkit_emit_state(config, state)
 
     prompt = _build_analysis_prompt(context)
 
@@ -262,6 +270,9 @@ async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfi
 
 
 async def end_node(state: StackAgentState, config: RunnableConfig):
+    # Clear logs and emit once more to update UI
+    state["tool_logs"] = []
+    await copilotkit_emit_state(config or RunnableConfig(recursion_limit=25), state)
     return {"messages": state["messages"], "tool_logs": []}
 
 

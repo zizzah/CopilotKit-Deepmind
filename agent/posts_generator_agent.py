@@ -34,20 +34,6 @@ class AgentState(CopilotKitState):
     response: Dict[str, Any]
 
 
-def add_tools(a: int, b: int) -> int:
-    """
-    This is a tool that adds two numbers together
-
-    Args:
-        a (int): The first number to add
-        b (int): The second number to add
-
-    Returns:
-        int: The sum of the two numbers
-    """
-    return a + b
-
-
 async def chat_node(state: AgentState, config: RunnableConfig):
 
     # 1. Define the model

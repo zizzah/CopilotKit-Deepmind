@@ -77,7 +77,6 @@ export default function PostGenerator() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { updateLayout } = useLayout()
   const [selectedAgent, setSelectedAgent] = useState(agents[0])
   const [showColumns, setShowColumns] = useState(false)
   const [posts, setPosts] = useState<PostInterface>({ tweet: { title: "", content: "" }, linkedIn: { title: "", content: "" } })
@@ -247,11 +246,6 @@ export default function PostGenerator() {
                       key={agent.id}
                       onClick={() => {
                         if (selectedAgent.id != agent.id) {
-                            // Update layout when switching agents
-                            updateLayout({
-                              title: `${agent.name} - DeepMind × Gemini`,
-                              description: agent.description,
-                            })
                             router.push(`/stack-analyzer`)
                         }
                         setIsDropdownOpen(false)
@@ -289,20 +283,10 @@ export default function PostGenerator() {
               useEffect(() => {
                 if (inProgress) {
                   setIsAgentActive(true)
-                  // Update layout when agent becomes active
-                  updateLayout({
-                    title: "DeepMind × Gemini - Live Research",
-                    description: "AI is actively researching and generating content...",
-                  })
                 } else {
                   setIsAgentActive(false)
-                  // Reset layout when agent becomes inactive
-                  updateLayout({
-                    title: "DeepMind × Gemini",
-                    description: "Powered by Google's most advanced AI models for generating LinkedIn and X posts",
-                  })
                 }
-              }, [inProgress, updateLayout])
+              }, [inProgress])
               const [input, setInput] = useState("")
               return (<>
                 <div className="space-y-3">
