@@ -76,7 +76,6 @@ interface PostInterface {
 export default function StackAnalyzer() {
     const router = useRouter()
     const [selectedAgent, setSelectedAgent] = useState(agents[1])
-    const [showColumns, setShowColumns] = useState(false)
     const [isAgentActive, setIsAgentActive] = useState(false)
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const { updateLayout } = useLayout()
@@ -88,11 +87,11 @@ export default function StackAnalyzer() {
             analysis : ""
         }
     })
-    const { appendMessage, visibleMessages, setMessages } = useCopilotChat()
+    const { appendMessage, setMessages } = useCopilotChat()
 
-    useEffect(() => {
-        console.log(state, "running", visibleMessages)
-    }, [state, visibleMessages])
+    // useEffect(() => {
+    //     console.log(state.show_cards, "running")
+    // }, [state, visibleMessages])
 
 
 
@@ -303,7 +302,7 @@ export default function StackAnalyzer() {
 
                 {/* Main Canvas */}
                 <div className="flex-1 p-6 overflow-y-auto">
-                    {(state?.show_cards || visibleMessages.length > 2) ? (
+                    {(state?.show_cards) ? (
                         <StackAnalysisCards analysis={state?.analysis} />
                     ) : (
                         <div className="text-center py-16">

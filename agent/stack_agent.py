@@ -275,6 +275,19 @@ async def gather_context_node(state: StackAgentState, config: RunnableConfig):
     # Determine URL from the latest user message
     last_user_content = state["messages"][-1].content if state["messages"] else ""
     parsed = _parse_github_url(last_user_content)
+    
+    if not parsed:
+        return Command(
+            goto= "analyze",
+            update = {
+                "analysis": state["analysis"],
+                "context": {},
+                "tool_logs": state["tool_logs"],
+                "show_cards": False,
+                "last_user_content": last_user_content
+            }
+        )        
+ 
 
     state["tool_logs"] = state.get("tool_logs", [])
     state["tool_logs"].append(
@@ -286,13 +299,6 @@ async def gather_context_node(state: StackAgentState, config: RunnableConfig):
     )
     await copilotkit_emit_state(config, state)
 
-    if not parsed:
-        state["tool_logs"][-1]["status"] = "failed"
-        await copilotkit_emit_state(config, state)
-        analysis = {
-            "error": "Could not parse GitHub URL from input. Provide a URL like https://github.com/owner/repo",
-        }
-        return {"analysis": analysis}
 
     owner, repo = parsed
     state["tool_logs"][-1]["status"] = "completed"
@@ -353,6 +359,16 @@ async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfi
     # )
 
     context = state.get("context", {})
+    if not context:
+        state["messages"].append(AIMessage(content= "Please provide a valid GitHub URL"))
+        return Command(
+            goto= "end",
+            update = {
+                "messages": state["messages"],
+                "show_cards": state["show_cards"],
+                "analysis": state["analysis"]
+            }
+        )
 
     state["tool_logs"] = state.get("tool_logs", [])
     state["tool_logs"].append(
@@ -476,7 +492,7 @@ async def end_node(state: StackAgentState, config: RunnableConfig):
         goto= END,
         update = {
             "messages": state["messages"],
-            "show_cards": True,
+            "show_cards": state["show_cards"],
             "analysis": state["analysis"]
         }
     )
