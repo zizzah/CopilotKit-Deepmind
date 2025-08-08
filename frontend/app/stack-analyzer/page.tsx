@@ -188,6 +188,11 @@ export default function StackAnalyzer() {
                                                 if (selectedAgent.id != agent.id) {
                                                     updateLayout({ agent: agent.id })
                                                     setMessages([])
+                                                    setState({
+                                                        tool_logs: [],
+                                                        show_cards : false,
+                                                        analysis : ""
+                                                    })
                                                     router.push(`/post-generator`)
                                                 }
                                                 setIsDropdownOpen(false)
