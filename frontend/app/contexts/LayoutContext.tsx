@@ -1,5 +1,6 @@
 "use client"
 
+import { usePathname } from 'next/navigation'
 import React, { createContext, useContext, useState, ReactNode } from 'react'
 
 interface LayoutState {
@@ -23,13 +24,14 @@ const defaultLayoutState: LayoutState = {
   description: "Powered by Google's most advanced AI models for generating LinkedIn and X posts",
   showHeader: true,
   theme: 'light',
-  agent: "stack_analysis_agent"
+  agent: "post_generation_agent"
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined)
 
 export function LayoutProvider({ children }: { children: ReactNode }) {
-  const [layoutState, setLayoutState] = useState<LayoutState>(defaultLayoutState)
+  const pathname = usePathname()
+  const [layoutState, setLayoutState] = useState<LayoutState>({...defaultLayoutState, agent: pathname.includes("post-generator") ? "post_generation_agent" : "stack_analysis_agent"})
 
   const updateLayout = (updates: Partial<LayoutState>) => {
     setLayoutState(prev => ({ ...prev, ...updates }))
