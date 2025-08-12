@@ -16,7 +16,6 @@ interface LayoutState {
 interface LayoutContextType {
   layoutState: LayoutState
   updateLayout: (updates: Partial<LayoutState>) => void
-  resetLayout: () => void 
 }
 
 const defaultLayoutState: LayoutState = {
@@ -31,18 +30,16 @@ const LayoutContext = createContext<LayoutContextType | undefined>(undefined)
 
 export function LayoutProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  const [layoutState, setLayoutState] = useState<LayoutState>({...defaultLayoutState, agent: pathname.includes("post-generator") ? "post_generation_agent" : "stack_analysis_agent"})
-
+  console.log(pathname)
+  const [layoutState, setLayoutState] = useState<LayoutState>({...defaultLayoutState, agent: (pathname == '/post-generator' ? "post_generation_agent" : "stack_analysis_agent")})
+  console.log(layoutState)
   const updateLayout = (updates: Partial<LayoutState>) => {
     setLayoutState(prev => ({ ...prev, ...updates }))
   }
 
-  const resetLayout = () => {
-    setLayoutState(defaultLayoutState)
-  }
 
   return (
-    <LayoutContext.Provider value={{ layoutState, updateLayout, resetLayout }}>
+    <LayoutContext.Provider value={{ layoutState, updateLayout }}>
       {children}
     </LayoutContext.Provider>
   )
