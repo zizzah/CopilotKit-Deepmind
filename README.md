@@ -21,7 +21,8 @@ It includes two agents, exposed through a **Next.js frontend** and a **FastAPI b
 
 - **Frontend**: Next.js  
 - **Backend**: FastAPI  
-- **Agents**: Powered by CopilotKit + Google Gemini + LangGraph
+- **Agents**:  Google Gemini + LangGraph
+- **UI Layer**: CopilotKit
 
 
 ## 📌 About
