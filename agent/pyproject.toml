@@ -20,7 +20,7 @@ dependencies = [
     "langchain[google-genai] (==0.3.26)",
     "requests (>=2.31.0,<3.0.0)"
 ]
-
+package-mode = false
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

@@ -11,5 +11,4 @@ fi
 # Activate the virtual environment
 source .venv/bin/activate
 
-# Install requirements using pip3 or pip
-(poetry install)
+(poetry install --no-root)

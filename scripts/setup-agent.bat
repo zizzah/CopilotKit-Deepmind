@@ -8,4 +8,4 @@ if not exist ".venv" (
 .venv\Scripts\activate.ps1
 
 pip install poetry
-poetry install 
+poetry install --no-root
