@@ -144,7 +144,7 @@ export default function StackAnalyzer() {
                         </div>
                         <div>
                             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                DeepMind × Gemini
+                                Open Gemini Canvas
                             </h1>
                             <p className="text-sm text-gray-600">Advanced AI Canvas</p>
                         </div>
@@ -285,7 +285,10 @@ export default function StackAnalyzer() {
                                 <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
                                     Analyze Github Repositories
                                 </h2>
-                                <p className="text-sm text-gray-600">Powered by Gemini AI & Google Web Search</p>
+                                <p className="text-sm text-gray-600">{/*Powered by Gemini AI & Google Web Search*/}
+                                Harness the power of Google's most advanced AI models for analyzing the stack of GitHub projects.
+
+                                </p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -315,7 +318,7 @@ export default function StackAnalyzer() {
                                 Ready to Explore
                             </h3>
                             <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
-                                Harness the power of Google's most advanced AI models for analyzing the stack of GitHub projects.
+                                {/* Harness the power of Google's most advanced AI models for analyzing the stack of GitHub projects. */}
                             </p>
                             <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
                                 {quickActions.slice(0, 4).map((action, index) => (

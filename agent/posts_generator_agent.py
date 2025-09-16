@@ -3,42 +3,28 @@ from google.genai import types
 from dotenv import load_dotenv
 import os
 from langchain_google_genai import ChatGoogleGenerativeAI
-from prompts import system_prompt, system_prompt_2, system_prompt_3
-
+from prompts import system_prompt, system_prompt_3, system_prompt_4
 load_dotenv()
-
-# Configure the client
-from typing import Dict, List, Any, Optional
-
-# Updated imports for LangGraph
+from typing import Dict, List, Any
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, END, START
-
-# Updated imports for CopilotKit
 from copilotkit import CopilotKitState
 from copilotkit.langchain import copilotkit_customize_config
 from langgraph.types import Command
-from typing_extensions import Literal
-from langchain_core.messages import SystemMessage, AIMessage
 from langgraph.checkpoint.memory import MemorySaver
-from copilotkit.langgraph import copilotkit_exit, copilotkit_emit_state
+from copilotkit.langgraph import copilotkit_emit_state
 import uuid
 import asyncio
 
-# from langchain_google_genai import GoogleGenerativeAI
-# from langchain.chat_models import init_chat_model
-
-
+# Define the agent's runtime state schema for CopilotKit/LangGraph
 class AgentState(CopilotKitState):
     tool_logs: List[Dict[str, Any]]
     response: Dict[str, Any]
 
 
 async def chat_node(state: AgentState, config: RunnableConfig):
-
     # 1. Define the model
     model = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
-    # model = init_chat_model("gemini-2.5-pro", model_provider="google_genai")
     state["tool_logs"].append(
         {
             "id": str(uuid.uuid4()),
@@ -48,6 +34,7 @@ async def chat_node(state: AgentState, config: RunnableConfig):
     )
     await copilotkit_emit_state(config, state)
 
+    # 2. Defining a condition to check if the last message is a tool so as to handle the FE tool responses
     if state["messages"][-1].type == "tool":
         client = ChatGoogleGenerativeAI(
             model="gemini-2.5-pro",
@@ -67,18 +54,16 @@ async def chat_node(state: AgentState, config: RunnableConfig):
         await copilotkit_emit_state(config, state)
         return Command(goto="fe_actions_node", update={"messages": resp})
 
+    # 3. Initializing the grounding tool to perform google search when needed. Using the google_search provided in the google.genai.types module
     grounding_tool = types.Tool(google_search=types.GoogleSearch())
     model_config = types.GenerateContentConfig(
         tools=[grounding_tool],
     )
-    # Define config for the model
     if config is None:
         config = RunnableConfig(recursion_limit=25)
     else:
-        # Use CopilotKit's custom config functions to properly set up streaming
         config = copilotkit_customize_config(config, emit_messages=True, emit_tool_calls=True)
-
-    # 2. Bind the tools to the model
+    # 4. Generating the response using the model. This returns the response along with the web search queries.
     response = model.models.generate_content(
         model="gemini-2.5-pro",
         contents=[
@@ -87,7 +72,7 @@ async def chat_node(state: AgentState, config: RunnableConfig):
                 role="model",
                 parts=[
                     types.Part(
-                        text="I understand. I will use the google_search tool when needed to provide current and accurate information."
+                        text= system_prompt_4
                     )
                 ],
             ),
@@ -97,10 +82,12 @@ async def chat_node(state: AgentState, config: RunnableConfig):
         ],
         config=model_config,
     )
+    # 5. Updating the tool logs and response so as to see the tool logs in the Frontend Chat UI
     state["tool_logs"][-1]["status"] = "completed"
     await copilotkit_emit_state(config, state)
     state["response"] = response.text
-    # 3. Define the system message by which the chat model will be run
+    
+    # 6. Orchestrating the web search queries and updating the tool logs
     for query in response.candidates[0].grounding_metadata.web_search_queries:
         state["tool_logs"].append(
             {
@@ -122,19 +109,7 @@ async def fe_actions_node(state: AgentState, config: RunnableConfig):
             return Command(goto="end_node", update=state)
     except Exception as e:
         print("Moved")
-
-    # model = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
-    # response = model.models.generate_content(
-    #     model="gemini-2.0-flash-preview-image-generation",
-    #     contents=[
-    #         types.Content(role="user", parts=[types.Part(text=system_prompt_2)]),
-    #         types.Content(
-    #             role="user", parts=[types.Part(text=state["messages"][-1].content)]
-    #         ),
-    #         types.Content(role="model", parts=[types.Part(text=state["response"])]),
-    #     ],
-    #     config=types.GenerateContentConfig(response_modalities=[types.Modality.IMAGE]),
-    # )
+        
     state["tool_logs"].append(
         {
             "id": str(uuid.uuid4()),
@@ -143,6 +118,7 @@ async def fe_actions_node(state: AgentState, config: RunnableConfig):
         }
     )
     await copilotkit_emit_state(config, state)
+    # 6. Initializing the model to generate the post along with the content that was scraped from the google search previously.
     model = ChatGoogleGenerativeAI(
         model="gemini-2.5-pro",
         temperature=1.0,
@@ -156,11 +132,11 @@ async def fe_actions_node(state: AgentState, config: RunnableConfig):
     )
     state["tool_logs"] = []
     await copilotkit_emit_state(config, state)
+    # 7. Returning the response to the frontend as a message which will invoke the correct calling of the Frontend useCopilotAction necessary.
     return Command(goto="end_node", update={"messages": response})
 
 
 async def end_node(state: AgentState, config: RunnableConfig):
-    print("inside end node")
     return Command(goto=END, update={"messages": state["messages"], "tool_logs": []})
 
 
@@ -178,7 +154,6 @@ workflow.add_node("fe_actions_node", fe_actions_node)
 workflow.add_node("end_node", end_node)
 workflow.set_entry_point("chat_node")
 workflow.set_finish_point("end_node")
-# Add explicit edges, matching the pattern in other examples
 workflow.add_edge(START, "chat_node")
 workflow.add_edge("chat_node", "fe_actions_node")
 workflow.add_edge("fe_actions_node", END)

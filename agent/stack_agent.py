@@ -26,6 +26,7 @@ from langchain_core.tools import tool
 load_dotenv()
 
 
+# Define the agent's runtime state schema for CopilotKit/LangGraph
 class StackAgentState(CopilotKitState):
     tool_logs: List[Dict[str, Any]]
     analysis: Dict[str, Any]
@@ -35,6 +36,7 @@ class StackAgentState(CopilotKitState):
 
 
 # -------------------- Structured Output Schema --------------------
+# Model the structured analysis sections returned by the LLM
 class FrontendSpec(BaseModel):
     framework: Optional[str] = None
     language: Optional[str] = None
@@ -93,10 +95,8 @@ class StructuredStackAnalysis(BaseModel):
     risks_notes: List[RiskNoteSpec] = Field(default_factory=list)
 
 
-# ------------------------------------------------------------------
 
-
-# OpenAI-style tool for returning the structured stack analysis
+# Expose a tool to return the structured stack analysis to the caller
 @tool("return_stack_analysis", args_schema=StructuredStackAnalysis)
 def return_stack_analysis_tool(**kwargs) -> Dict[str, Any]:
     """Return the final stack analysis in a strict JSON structure. Use this tool to output results."""
@@ -104,10 +104,10 @@ def return_stack_analysis_tool(**kwargs) -> Dict[str, Any]:
         validated = StructuredStackAnalysis(**kwargs)
         return validated.model_dump(exclude_none=True)
     except Exception:
-        # In case validation fails unexpectedly, return raw
         return kwargs
 
 
+# Parse a GitHub URL and return (owner, repo) when present
 def _parse_github_url(url: str) -> Optional[Tuple[str, str]]:
     """Extract owner and repo from a GitHub URL, even if surrounded by other text."""
     pattern = (
@@ -119,6 +119,7 @@ def _parse_github_url(url: str) -> Optional[Tuple[str, str]]:
     return match.group("owner"), match.group("repo")
 
 
+# Build GitHub API headers and attach token when available
 def _github_headers() -> Dict[str, str]:
     token = os.getenv("GITHUB_TOKEN")
     headers = {"Accept": "application/vnd.github+json"}
@@ -127,6 +128,7 @@ def _github_headers() -> Dict[str, str]:
     return headers
 
 
+# Issue a GET request to the GitHub API and return a successful response or None
 def _gh_get(url: str) -> Optional[requests.Response]:
     try:
         resp = requests.get(url, headers=_github_headers(), timeout=30)
@@ -137,6 +139,7 @@ def _gh_get(url: str) -> Optional[requests.Response]:
         return None
 
 
+# Fetch general repository metadata
 def _fetch_repo_info(owner: str, repo: str) -> Dict[str, Any]:
     info = {}
     r = _gh_get(f"https://api.github.com/repos/{owner}/{repo}")
@@ -145,13 +148,14 @@ def _fetch_repo_info(owner: str, repo: str) -> Dict[str, Any]:
     return info
 
 
+# Fetch language usage in bytes for the repository
 def _fetch_languages(owner: str, repo: str) -> Dict[str, int]:
     r = _gh_get(f"https://api.github.com/repos/{owner}/{repo}/languages")
     return r.json() if r else {}
 
 
+# Fetch README content, falling back to scanning root contents when needed
 def _fetch_readme(owner: str, repo: str) -> str:
-    # Prefer the readme API which returns the default README
     r = _gh_get(f"https://api.github.com/repos/{owner}/{repo}/readme")
     if r:
         data = r.json()
@@ -161,7 +165,6 @@ def _fetch_readme(owner: str, repo: str) -> str:
                 return base64.b64decode(content).decode("utf-8", errors="ignore")
             except Exception:
                 pass
-    # Fallback: try common README names in root contents
     contents = _gh_get(f"https://api.github.com/repos/{owner}/{repo}/contents/")
     if contents:
         for item in contents.json():
@@ -173,11 +176,13 @@ def _fetch_readme(owner: str, repo: str) -> str:
     return ""
 
 
+# List files and directories in the repository root
 def _list_root(owner: str, repo: str) -> List[Dict[str, Any]]:
     r = _gh_get(f"https://api.github.com/repos/{owner}/{repo}/contents/")
     return r.json() if r else []
 
 
+# Enumerate common root-level manifest and config files
 ROOT_MANIFEST_CANDIDATES = [
     "package.json",
     "pnpm-lock.yaml",
@@ -211,6 +216,7 @@ ROOT_MANIFEST_CANDIDATES = [
 ]
 
 
+# Download contents of known manifest files when present in root
 def _fetch_manifest_contents(
     owner: str,
     repo: str,
@@ -224,7 +230,6 @@ def _fetch_manifest_contents(
         item = by_name.get(name)
         if not item:
             continue
-        # Use download_url if present, otherwise construct raw URL
         download_url = item.get("download_url")
         text: Optional[str] = None
         if download_url:
@@ -241,6 +246,7 @@ def _fetch_manifest_contents(
     return manifest_map
 
 
+# Summarize root items as "name (type)" strings
 def _summarize_root_files(root_items: List[Dict[str, Any]]) -> List[str]:
     names = []
     for item in root_items:
@@ -248,6 +254,7 @@ def _summarize_root_files(root_items: List[Dict[str, Any]]) -> List[str]:
     return names
 
 
+# Build the analysis prompt by embedding gathered repository context
 def _build_analysis_prompt(context: Dict[str, Any]) -> str:
     return (
         "You are a senior software architect. Analyze the following GitHub repository at a high level.\n"
@@ -265,14 +272,14 @@ def _build_analysis_prompt(context: Dict[str, Any]) -> str:
 
 
 async def gather_context_node(state: StackAgentState, config: RunnableConfig):
-    # Ensure streaming is enabled
+    # 1. Configure execution to emit intermediate messages and tool calls
     config = copilotkit_customize_config(
         config or RunnableConfig(recursion_limit=25),
         emit_messages=True,
         emit_tool_calls=True,
     )
 
-    # Determine URL from the latest user message
+    # Parse the last user message for a GitHub URL; fall back when absent
     last_user_content = state["messages"][-1].content if state["messages"] else ""
     parsed = _parse_github_url(last_user_content)
     
@@ -289,6 +296,7 @@ async def gather_context_node(state: StackAgentState, config: RunnableConfig):
         )        
  
 
+    # 2. Create a log entry for URL extraction
     state["tool_logs"] = state.get("tool_logs", [])
     state["tool_logs"].append(
         {
@@ -304,6 +312,7 @@ async def gather_context_node(state: StackAgentState, config: RunnableConfig):
     state["tool_logs"][-1]["status"] = "completed"
     await copilotkit_emit_state(config, state)
 
+    # 3. Create a log entry for repository metadata fetch
     state["tool_logs"].append(
         {
             "id": str(uuid.uuid4()),
@@ -313,6 +322,7 @@ async def gather_context_node(state: StackAgentState, config: RunnableConfig):
     )
     await copilotkit_emit_state(config, state)
 
+    # 4. Fetch metadata, languages, README, root items, and manifests
     repo_info = _fetch_repo_info(owner, repo)
     default_branch = repo_info.get("default_branch")
     languages = _fetch_languages(owner, repo)
@@ -320,6 +330,7 @@ async def gather_context_node(state: StackAgentState, config: RunnableConfig):
     root_items = _list_root(owner, repo)
     manifests = _fetch_manifest_contents(owner, repo, default_branch, root_items)
 
+    # 5. Assemble the gathered context for downstream analysis
     context: Dict[str, Any] = {
         "owner": owner,
         "repo": repo,
@@ -346,18 +357,8 @@ async def gather_context_node(state: StackAgentState, config: RunnableConfig):
 
 
 async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfig):
-    # Ensure streaming is enabled for this node as well
-    # config = copilotkit_customize_config(
-    #     config,
-    #     emit_intermediate_state=[
-    #         {
-    #             "state_key": "analysis",
-    #             "tool": "return_stack_analysis",
-    #             "tool_argument": "purpose",
-    #         }
-    #     ],
-    # )
-
+    # 6. Short-circuit when no context exists and request a valid URL
+    
     context = state.get("context", {})
     if not context:
         state["messages"].append(AIMessage(content= "Please provide a valid GitHub URL"))
@@ -370,12 +371,14 @@ async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfi
             }
         )
 
+    # 7. Begin analysis and emit progress
     state["tool_logs"] = state.get("tool_logs", [])
     state["tool_logs"].append(
         {"id": str(uuid.uuid4()), "message": "Analyzing stack", "status": "processing"}
     )
     await copilotkit_emit_state(config, state)
 
+    # 8. Build the prompt and system instructions for structured tool usage
     prompt = _build_analysis_prompt(context)
     system_instructions = (
         "You are a senior software architect. Analyze the repository context provided by the user. "
@@ -387,6 +390,7 @@ async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfi
         HumanMessage(content=prompt),
     ]
 
+    # 9. Initialize Gemini client for tool call and fallback passes
     model = ChatGoogleGenerativeAI(
         model="gemini-2.5-pro",
         temperature=0.4,
@@ -394,11 +398,10 @@ async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfi
         google_api_key=os.getenv("GOOGLE_API_KEY"),
     )
 
-    # Prefer tool calling via bind_tools(); then structured output; then raw JSON parse
     pretty: str
     structured_payload: Optional[Dict[str, Any]] = None
 
-    # 1) Try to get a tool call
+    # 10. Attempt tool-based structured output first
     try:
         bound = model.bind_tools([return_stack_analysis_tool])
         tool_msg = await bound.ainvoke(messages, config)
@@ -416,14 +419,13 @@ async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfi
                                 **args
                             ).model_dump(exclude_none=True)
                         except Exception:
-                            # accept the raw args if validation fails
                             structured_payload = dict(args)
                         break
     except Exception:
         pass
 
-    # 2) Fallback: structured output
     if structured_payload is None:
+        # 11. Fall back to schema-coerced structured output if no tool call is returned
         try:
             structured_model = model.with_structured_output(StructuredStackAnalysis)
             structured_response = await structured_model.ainvoke(messages, config)
@@ -439,6 +441,7 @@ async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfi
         except Exception:
             structured_payload = None
 
+    # 12. Mark the analysis step complete and prepare a concise summary request
     state["tool_logs"][-1]["status"] = "completed"
     await copilotkit_emit_state(config, state)
     messages[-1].content = state["last_user_content"]
@@ -446,6 +449,7 @@ async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfi
     messages.append(ToolMessage(content= "The GitHub Repository has been analyzed", tool_call_id = tool_calls[0]["id"], type = "tool"))
     messages[0].content = "Generate a summary of the GitHub Repository. It should be in a concise and strictly textual"
     
+    # 13. Generate a user-facing summary referencing the tool call outcome
     client = ChatGoogleGenerativeAI(
         model="gemini-2.5-pro",
         temperature=0.4,
@@ -458,22 +462,9 @@ async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfi
     state["tool_logs"][-1]["status"] = "completed"
     await copilotkit_emit_state(config, state)
     print(model_response, "model_response")
-    # if structured_payload:
-    #     pretty = json.dumps(structured_payload, indent=2)
-    #     # store for downstream consumers if needed
-    #     # state.setdefault("analysis", {})["structured"] = structured_payload
-    # else:
-    #     # Fallback: call the raw model and try to coerce JSON
-    #     response = await model.ainvoke(messages, config)
-    #     text = response.content if isinstance(response, AIMessage) else str(response)
-    #     try:
-    #         parsed_json = json.loads(text)
-    #         pretty = json.dumps(parsed_json, indent=2)
-    #         state.setdefault("analysis", {})["structured"] = parsed_json
-    #     except Exception:
-    #         pretty = text
+   
     state["messages"].append(AIMessage(content= model_response.content))
-    # Return a message containing the analysis
+    # 14. Return a message containing the analysis
     return Command(
         goto= "end",
         update = {
@@ -485,6 +476,7 @@ async def analyze_with_gemini_node(state: StackAgentState, config: RunnableConfi
 
 
 async def end_node(state: StackAgentState, config: RunnableConfig):
+    # 15. Finalize the workflow and emit one last state update
     # Clear logs and emit once more to update UI
     state["tool_logs"] = []
     await copilotkit_emit_state(config or RunnableConfig(recursion_limit=25), state)

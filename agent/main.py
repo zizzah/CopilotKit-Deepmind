@@ -5,7 +5,7 @@ This serves our agents through a FastAPI server.
 import os
 from dotenv import load_dotenv
 
-load_dotenv()  # pylint: disable=wrong-import-position
+load_dotenv()  
 
 from fastapi import FastAPI
 import uvicorn
@@ -15,7 +15,6 @@ from posts_generator_agent import post_generation_graph
 from stack_agent import stack_analysis_graph
 
 app = FastAPI()
-# Use CopilotKitSDK instead of CopilotKitRemoteEndpoint
 
 
 sdk = CopilotKitSDK(

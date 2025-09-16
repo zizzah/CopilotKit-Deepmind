@@ -46,3 +46,6 @@ RULES :
 {context}
 
 """
+
+system_prompt_4 = """I understand. I will use the google_search tool when needed to provide current and accurate information.
+"""
