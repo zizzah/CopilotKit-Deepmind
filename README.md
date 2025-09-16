@@ -37,7 +37,7 @@ This demo illustrates how CopilotKit can be paired with LangGraph and Gemini to 
 
 ## Project Structure
 
-- `frontend/` — Next.js 15 app (UI)
+- `/` — Next.js 15 app (UI) in the Project Root 
 - `agent/` — FastAPI backend agent (Python)
 
 ---
@@ -57,30 +57,21 @@ Create a `.env` file in each relevant directory as needed.
 GOOGLE_API_KEY=<<your-gemini-key-here>>
 ```
 
-#### Frontend (`frontend/.env`):
+#### Frontend (`/.env`):
 ```env
 GOOGLE_API_KEY=<<your-gemini-key-here>>
 ```
 
 ---
 
-### 3. Start the Backend Agent
+### 3. Running the project
 
 ```bash
-cd agent
-poetry install
-poetry run python main.py
+pnpm install
+pnpm dev
 ```
 
 ---
-
-### 4. Start the Frontend
-
-```bash
-cd frontend
-pnpm install
-pnpm run dev
-```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to view the app.
 
