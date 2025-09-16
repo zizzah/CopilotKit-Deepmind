@@ -1,4 +1,4 @@
-# CopilotKit-Deepmind
+# Open Gemini Canvas
 
 https://github.com/user-attachments/assets/1e95c9e1-2d55-4f63-b805-be49fe94a493
 
