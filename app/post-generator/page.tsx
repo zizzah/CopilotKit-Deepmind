@@ -11,6 +11,7 @@ import {
   Sparkles,
   FileText,
   Twitter,
+  X,
   TrendingUp,
   Send,
   User,
@@ -56,7 +57,7 @@ const agents = [
 const quickActions = [
   { label: "Recent Research", icon: Search, color: "text-blue-600", prompt: "Generate a post about recent research on String Theory" },
   { label: "Recent News", icon: FileText, color: "text-green-600", prompt: "Generate a post about recent news in United States" },
-  { label: "Post about Social Media", icon: Twitter, color: "text-purple-600", prompt: "Generate a post about Instagram" },
+  { label: "Post about Social Media", icon: X, color: "text-purple-600", prompt: "Generate a post about Instagram" },
   { label: "Post about Stocks", icon: TrendingUp, color: "text-orange-600", prompt: "Generate a post about Nvidia" },
 ]
 
