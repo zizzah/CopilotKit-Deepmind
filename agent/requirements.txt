@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+copilotkit
+langgraph
+langchain-google-genai
+google-generativeai
+python-dotenv
+requests
+pydantic
