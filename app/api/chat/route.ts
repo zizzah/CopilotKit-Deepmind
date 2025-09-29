@@ -107,7 +107,6 @@ You have access to advanced research tools powered by Google's AI infrastructure
         },
       }),
     },
-    maxSteps: 3,
   })
 
   return result.toUIMessageStreamResponse()

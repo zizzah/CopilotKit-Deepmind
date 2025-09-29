@@ -19,7 +19,7 @@ import asyncio
 # Define the agent's runtime state schema for CopilotKit/LangGraph
 class AgentState(CopilotKitState):
     tool_logs: List[Dict[str, Any]]
-    response: Dict[str, Any]
+    response: str  # Changed from Dict to str to match usage
 
 
 async def chat_node(state: AgentState, config: RunnableConfig):
@@ -52,7 +52,8 @@ async def chat_node(state: AgentState, config: RunnableConfig):
         )
         state["tool_logs"] = []
         await copilotkit_emit_state(config, state)
-        return Command(goto="fe_actions_node", update={"messages": resp})
+        # FIX: Initialize response with empty string when returning early
+        return Command(goto="fe_actions_node", update={"messages": resp, "response": ""})
 
     # 3. Initializing the grounding tool to perform google search when needed. Using the google_search provided in the google.genai.types module
     grounding_tool = types.Tool(google_search=types.GoogleSearch())
@@ -126,8 +127,11 @@ async def fe_actions_node(state: AgentState, config: RunnableConfig):
         google_api_key=os.getenv("GOOGLE_API_KEY"),
     )
     await copilotkit_emit_state(config, state)
+    
+    # FIX: Use .get() with a default value to prevent KeyError
+    response_context = state.get("response", "")
     response = await model.bind_tools([*state["copilotkit"]["actions"]]).ainvoke(
-        [system_prompt_3.replace("{context}", state["response"]), *state["messages"]],
+        [system_prompt_3.replace("{context}", response_context), *state["messages"]],
         config,
     )
     state["tool_logs"] = []

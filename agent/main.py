@@ -46,6 +46,13 @@ def root():
     """Root endpoint."""
     return {"message": "Hello, World!"}
 
+@app.get("/docs-info")
+def docs_info():
+    """Helpful message for testing docs and endpoints."""
+    return {
+        "message": "Swagger UI available at /docs",
+        "endpoints": ["/healthz", "/", "/copilotkit"],
+    }
 
 def main():
     """Run the uvicorn server."""
